@@ -2,13 +2,13 @@
 
 This project develops machine learning models to predict the risk of heart disease using demographic, lifestyle, and clinical variables. The focus is on improving sensitivity, model interpretability, and supporting data-driven healthcare decision making.
 
-This was completed as a **group project** as part of the Master’s in Data Science program at Berlin University of Applied Sciences and Technology (BHT).
+This work was completed as a **group project** as part of the Master’s in Data Science program at Berlin University of Applied Sciences and Technology (BHT).
 
 ---
 
 ## 📌 Motivation
 
-Cardiovascular diseases remain one of the leading causes of mortality worldwide. Early risk prediction can support preventive care, reduce healthcare burden, and improve clinical outcomes. This project explores predictive modelling and explainable AI methods to identify high-risk individuals and provide interpretable insights.
+Cardiovascular diseases remain one of the leading causes of mortality worldwide. Early risk prediction enables preventive care, reduces healthcare burden, and improves clinical outcomes. This project explores predictive modelling and explainable AI methods to identify high-risk individuals and provide interpretable insights for clinical and public health applications.
 
 ---
 
@@ -37,33 +37,47 @@ The project follows a complete machine learning pipeline:
 * Data visualization
 
 ---
-## 🚀 Installation  
+
+## 🚀 Installation
 
 Install the required R packages:
 
 ```r
 install.packages(c("caret", "randomForest", "e1071", "pROC", "DALEX", "dplyr", "ggplot2", "readr"))
+```
+
+Run the main R Markdown file inside the **notebooks** folder to reproduce the full analysis.
+
 ---
 
-### 📊 Results
+## 📊 Results
 
-The models demonstrated effective classification performance. Special emphasis was placed on sensitivity and recall to reduce false negatives, which is critical in healthcare applications.
+The models demonstrated effective classification performance. Special emphasis was placed on **sensitivity and recall** to reduce false negatives, which is critical in healthcare applications.
 
 Explainability techniques were used to understand key predictors and ensure transparency in model decisions.
 
-## Confusion Matrix
+### Confusion Matrix
 
 Model performance was evaluated using confusion matrices for Random Forest and Naive Bayes.
 
-##Feature Importance
+### Feature Importance
 
-The most important clinical and demographic predictors influencing heart disease risk were identified.
+Key clinical and lifestyle predictors influencing heart disease risk were identified.
 
-## Partial Dependence Analysis
+### Partial Dependence Analysis
 
 Partial dependence profiles were used to explore how specific features influence predictions.
 
-See the figures folder for visual results.
+See the **figures** folder for visual results.
+
+---
+
+## 🔑 Key Insights
+
+* Sensitivity is critical in healthcare prediction to avoid false negatives.
+* Lifestyle and clinical variables strongly influence heart disease risk.
+* Explainable AI improves transparency and trust in clinical decision support systems.
+* Model interpretability supports responsible and ethical AI in healthcare.
 
 ---
 
@@ -100,11 +114,6 @@ heart-disease-prediction-ml
 ```
 
 ---
-## 🔑 Key Insights  
-
-- Sensitivity is critical in healthcare prediction to avoid false negatives.  
-- Lifestyle and clinical variables strongly influence heart disease risk.  
-- Explainable AI improves transparency and trust in clinical decision support systems.
 
 ## 👩‍💻 Author
 
@@ -113,7 +122,5 @@ Master’s Student in Data Science
 Berlin University of Applied Sciences and Technology (BHT)
 
 ---
-
-
 
 
