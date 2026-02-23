@@ -60,7 +60,7 @@ Partial Dependence Analysis
 
 Partial dependence profiles were used to explore how specific features influence predictions.
 
-See the figures folder for visual results.
+👉 See the figures folder for visual results.
 
 🌍 Applications
 
