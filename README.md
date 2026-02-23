@@ -44,21 +44,22 @@ Install the required R packages:
 ```r
 install.packages(c("caret", "randomForest", "e1071", "pROC", "DALEX", "dplyr", "ggplot2", "readr"))
 ---
-## 📊 Results
+
+### 📊 Results
 
 The models demonstrated effective classification performance. Special emphasis was placed on sensitivity and recall to reduce false negatives, which is critical in healthcare applications.
 
 Explainability techniques were used to understand key predictors and ensure transparency in model decisions.
 
-### Confusion Matrix
+## Confusion Matrix
 
 Model performance was evaluated using confusion matrices for Random Forest and Naive Bayes.
 
-### Feature Importance
+##Feature Importance
 
 The most important clinical and demographic predictors influencing heart disease risk were identified.
 
-### Partial Dependence Analysis
+## Partial Dependence Analysis
 
 Partial dependence profiles were used to explore how specific features influence predictions.
 
@@ -112,6 +113,7 @@ Master’s Student in Data Science
 Berlin University of Applied Sciences and Technology (BHT)
 
 ---
+
 
 
 
