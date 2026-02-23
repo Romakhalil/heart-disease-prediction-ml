@@ -37,6 +37,12 @@ The project follows a complete machine learning pipeline:
 * Data visualization
 
 ---
+## 🚀 Installation  
+
+Install the required R packages:
+
+```r
+install.packages(c("caret", "randomForest", "e1071", "pROC", "DALEX", "dplyr", "ggplot2", "readr"))
 
 ## 📊 Results
 
@@ -93,6 +99,11 @@ heart-disease-prediction-ml
 ```
 
 ---
+## 🔑 Key Insights  
+
+- Sensitivity is critical in healthcare prediction to avoid false negatives.  
+- Lifestyle and clinical variables strongly influence heart disease risk.  
+- Explainable AI improves transparency and trust in clinical decision support systems.
 
 ## 👩‍💻 Author
 
@@ -101,4 +112,5 @@ Master’s Student in Data Science
 Berlin University of Applied Sciences and Technology (BHT)
 
 ---
+
 
