@@ -43,7 +43,7 @@ Install the required R packages:
 
 ```r
 install.packages(c("caret", "randomForest", "e1071", "pROC", "DALEX", "dplyr", "ggplot2", "readr"))
-
+---
 ## 📊 Results
 
 The models demonstrated effective classification performance. Special emphasis was placed on sensitivity and recall to reduce false negatives, which is critical in healthcare applications.
@@ -112,5 +112,6 @@ Master’s Student in Data Science
 Berlin University of Applied Sciences and Technology (BHT)
 
 ---
+
 
 
