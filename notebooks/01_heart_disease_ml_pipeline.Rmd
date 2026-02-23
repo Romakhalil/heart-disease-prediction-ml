@@ -1,0 +1,383 @@
+---
+title: "Heart Disease Prediction Using Machine Learning"
+subtitle: "Machine Learning 2 Project"
+abstract: |
+  This project analyses a heart disease dataset using supervised machine
+  learning techniques. The goal is to predict whether an individual suffers
+  from heart disease based on demographic, lifestyle, and clinical variables.
+date: "`r Sys.Date()`"
+fontsize: 11pt
+geometry:
+  - top=1cm
+  - bottom=1cm
+  - left=1.5cm
+  - right=1.5cm
+  - headsep=0.3cm
+  - footskip=0.7cm
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    citation_package: natbib
+  html_document:
+    toc: true
+    number_sections: true
+    df_print: paged
+  word_document:
+    toc: true
+bibliography: references.bib
+csl: ieee.csl
+link-citations: true
+---
+
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# CLEAR ENVIRONMENT
+rm(list = ls(all.names = TRUE))
+# LOAD PACKAGES
+library(pROC)
+library(caret)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(randomForest)
+library(e1071)
+library(caret)
+library(DALEX)
+# GLOBAL CHUNK OPTIONS
+# 'dev' checks if it's PDF to use high-quality rendering, otherwise standard
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE, 
+  warning = FALSE,
+  fig.align = "center",
+  fig.width = 6, 
+  fig.height = 4,
+  cache = TRUE
+)
+# GGPLOT THEME
+theme_set(theme_minimal())  
+```
+
+# Introduction and Descriptive Data Analysis
+The aim of this project is to predict whether an individual suffers from heart disease using demographic, lifestyle, and clinical variables [@who2019]. The problem is formulated as a binary supervised classification task.
+
+## Data Overview (Compact Summary).
+```{r}
+# Loading data
+data <- read_csv("heart_disease.csv")
+# Renaming outcome variable
+data <- data %>%
+  rename(Heart_Disease_Status = `Heart Disease Status`)
+# Dataset overview 
+overview <- data.frame(
+  Observations     = nrow(data),
+  Variables        = ncol(data),
+  Missing_Values   = sum(is.na(data))
+)
+knitr::kable(
+  overview,
+  caption = "Dataset Overview"
+)
+```
+
+## Outcome Variable Distribution
+```{r}
+# Convert outcome variable to factor
+data$Heart_Disease_Status <- as.factor(data$Heart_Disease_Status)
+# Outcome variable distribution (table)
+table(data$Heart_Disease_Status) |>
+  knitr::kable(
+    caption = "Outcome Variable Distribution"
+  )
+```
+
+## Data Preprocessing
+```{r}
+# Removing observations with missing values and duplicates
+data <- na.omit(data)
+data <- distinct(data)
+# Converting categorical predictors to factors
+categorical_vars <- c(
+"Gender",
+"Exercise Habits",
+"Smoking",
+"Family Heart Disease",
+"Diabetes",
+"High Blood Pressure",
+"Low HDL Cholesterol",
+"High LDL Cholesterol",
+"Alcohol Consumption",
+"Stress Level",
+"Sugar Consumption"
+)
+data[categorical_vars] <- lapply(data[categorical_vars], as.factor)
+# Making column names R-friendly
+names(data) <- make.names(names(data))
+# Store cleaned dataset for modeling
+clean_data <- data
+```
+Minimal preprocessing was applied.
+
+# Mathemcatical Overview of the Models
+
+## Random Forest
+The Random Forest classifier is an ensemble learning method that combines multiple decision trees. Each tree is trained on a bootstrap sample of the data, and a random subset of predictors is considered at each split [@breiman2001].The final prediction is obtained by majority voting:
+\[
+\hat{y} = \mathrm{mode}\{T_1(x), T_2(x), \ldots, T_B(x)\}
+\]
+where \(T_b(x)\) is the prediction of the \(b\)-th tree.
+
+## Naive Bayes
+Naive Bayes is a probabilistic classifier based on Bayes' theorem. It assumes conditional independence between predictors given the class label [@bishop2006].
+\[
+P(y \mid x) \propto P(y) \prod_{j=1}^{p} P(x_j \mid y)
+\]
+The class with the highest posterior probability is selected.
+
+# Model Fitting and Evaluation
+## Data Splitting
+```{r}
+set.seed(456)
+# Shuffling the data to avoid ordering effects
+clean_data <- clean_data[sample(nrow(clean_data)), ]
+# Split data: 60% train, 20% validation, 20% test
+n <- nrow(clean_data)
+train_data <- clean_data[1:round(0.6*n), ]
+valid_data <- clean_data[(round(0.6*n)+1):round(0.8*n), ]
+test_data  <- clean_data[(round(0.8*n)+1):n, ]
+```
+The data was split into 60% training, 20% validation, and 20% test sets.
+
+## Random Forest: Fitting and Hyperparameter Selection
+```{r}
+best_mtry <- 1
+best_acc <- 0
+# Tune mtry using validation accuracy
+for (m in 2:(ncol(train_data)-1)) {
+rf_tmp <- randomForest(
+Heart_Disease_Status ~ .,
+data = train_data,
+mtry = m,
+ntree = 500
+)
+val_pred <- predict(rf_tmp, valid_data)
+acc <- mean(val_pred == valid_data$Heart_Disease_Status)
+
+if (acc > best_acc) {
+best_acc <- acc
+best_mtry <- m
+}
+}
+best_mtry
+```
+Different values of mtry were evaluated based on validation accuracy, and the value achieving the highest accuracy was selected.
+
+## Final Models
+```{r}
+# Final Random Forest Model
+final_rf <- randomForest(
+Heart_Disease_Status ~ .,
+data = rbind(train_data, valid_data),
+mtry = best_mtry,
+ntree = 500
+)
+# Final Naive Bayes Model
+final_nb <- naiveBayes(
+Heart_Disease_Status ~ .,
+data = rbind(train_data, valid_data)
+)
+```
+The final Models were then trained on the combined training and validation data and  evaluated on the test set.
+Naive Bayes was trained using the same data as Random Forest.No hyperparameter tuning was required for this method.
+
+## Class Imbalance issue
+Initial evaluation on the imbalanced dataset resulted in high overall accuracy but zero sensitivity for both models, indicating a complete failure to detect heart disease cases. This demonstrates the misleading nature of accuracy under severe class imbalance [@powers2011].
+
+## Balancing the Training Data
+```{r}
+# Balance only the training data
+
+train_bal <- upSample(
+x = train_data[, -which(names(train_data) == "Heart_Disease_Status")],
+y = train_data$Heart_Disease_Status
+)
+names(train_bal)[ncol(train_bal)] <- "Heart_Disease_Status"
+table(train_bal$Heart_Disease_Status)
+```
+The training data was balanced while keeping the validation and test data unchanged.
+
+## Retrain models on balanced training data
+```{r}
+rf_bal <- randomForest(
+Heart_Disease_Status ~ .,
+data = train_bal,
+mtry = best_mtry,
+ntree = 500
+)
+nb_bal <- naiveBayes(
+Heart_Disease_Status ~ .,
+data = train_bal
+)
+```
+
+## Evaluate balanced models on the same test data
+```{r}
+# Confusion matrices (balanced models)
+rf_cm <- confusionMatrix(
+  predict(rf_bal, test_data),
+  test_data$Heart_Disease_Status,
+  positive = "Yes"
+)
+nb_cm <- confusionMatrix(
+  predict(nb_bal, test_data),
+  test_data$Heart_Disease_Status,
+  positive = "Yes"
+)
+# Random Forest
+rf_cm$table |>
+  knitr::kable(caption = "Confusion Matrix – Random Forest (Balanced)")
+rf_accuracy <- rf_cm$overall["Accuracy"]
+#  Naive Bayes 
+nb_cm$table |>
+  knitr::kable(caption = "Confusion Matrix – Naive Bayes (Balanced)")
+nb_accuracy <- nb_cm$overall["Accuracy"]
+# Accuracy summary
+data.frame(
+  Model = c("Random Forest", "Naive Bayes"),
+  Accuracy = c(rf_accuracy, nb_accuracy)
+) |>
+knitr::kable(
+  digits = 3,
+  caption = "Test Accuracy of Balanced Models"
+)
+```
+After balancing the data, Random Forest showed only a small improvement in detecting heart disease, while Naive Bayes detected more cases but with lower accuracy. Random Forest remained biased toward the majority class, whereas Naive Bayes was more sensitive to class imbalance.
+
+### Improving Results: Clinical Utility & Threshold Adjustment
+In medical diagnostics for life-threatening conditions like heart disease, a model's **utility** is defined by its ability to minimize False Negatives. A patient sent home with undetected heart disease is a catastrophic failure, whereas a "False Alarm" simply leads to further non-invasive testing. To prioritize **Sensitivity** (catching the disease), we lower the classification threshold from the default 0.5 to **0.3**.
+
+```{r threshold_adjustment,echo=FALSE}
+# 1. Extract raw probabilities instead of class labels
+rf_probs <- predict(rf_bal, test_data, type = "prob")
+# 2. Apply the 0.3 threshold
+# If probability of 'Yes' >= 0.3, classify as 'Yes'
+rf_pred_03 <- ifelse(rf_probs[, "Yes"] >= 0.3, "Yes", "No")
+rf_pred_03 <- factor(rf_pred_03, levels = c("No", "Yes"))
+# 3. Generate the new Confusion Matrix
+rf_cm_03 <- confusionMatrix(rf_pred_03, test_data$Heart_Disease_Status, positive = "Yes")
+rf_cm_03$table
+```
+
+# Model Interpretation using Model-Agnostic XAI
+
+## Global Feature Importance (Graphical)
+```{r, fig.width=4.5, fig.height=3, echo=TRUE, message=FALSE, warning=FALSE}
+# Separating predictors and outcome
+X <- clean_data[, -which(names(clean_data) == "Heart_Disease_Status")]
+# Converting outcome to numeric (Yes = 1, No = 0)
+y_num <- ifelse(clean_data$Heart_Disease_Status == "Yes", 1, 0)
+# Random Forest explainer
+exp_rf <- explain(
+  final_rf,
+  data = X,
+  y = y_num,
+  predict_function = function(model, newdata) {
+    predict(model, newdata, type = "prob")[, "Yes"]
+  },
+  label = "Random Forest",
+  verbose = FALSE
+)
+# Naive Bayes explainer
+exp_nb <- explain(
+  final_nb,
+  data = X,
+  y = y_num,
+  predict_function = function(model, newdata) {
+    predict(model, newdata, type = "raw")[, "Yes"]
+  },
+  label = "Naive Bayes",
+  verbose = FALSE
+)
+# Permutation Feature Importance only 8
+fi_rf_top <- model_parts(exp_rf) %>% head(8)
+fi_nb_top <- model_parts(exp_nb) %>% head(8)
+# Plots
+plot(fi_rf_top) +
+  ggtitle("RF Feature Importance") +
+  theme_minimal(base_size = 7)
+plot(fi_nb_top) +
+  ggtitle("NB Feature Importance") +
+  theme_minimal(base_size = 7)
+```
+Permutation feature importance shows that Random Forest relies on multiple clinical and lifestyle variables, while Naive Bayes depends strongly on a small number of predictors [@biecek2021].
+
+## Feature Effects (Partial Dependence Profiles)
+```{r, fig.width=4, fig.height=2.5}
+age_rf <- model_profile(
+  exp_rf,
+  variables = "Age",
+  type = "partial"
+)
+age_nb <- model_profile(
+  exp_nb,
+  variables = "Age",
+  type = "partial"
+)
+plot(age_rf, age_nb)
+```
+The Random Forest model shows that age influences the final prediction differently across age ranges, meaning age has a varying impact on predicted heart disease risk. In contrast, the Naive Bayes model assigns a nearly constant effect to age, indicating that age has only a limited influence on its final predictions.
+
+## Local (Microscopic) Explanation
+```{r}
+## Local explanation for one individual
+# Selecting a single observation from the dataset
+obs <- X[1, , drop = FALSE]
+```
+
+### Local explanation – Random Forest
+```{r, fig.width=4, fig.height=3, echo=FALSE}
+bd_rf <- predict_parts(
+  exp_rf,
+  new_observation = obs,
+  type = "break_down"
+)
+# Keeping only top 7 contributions for readability
+bd_rf_top <- bd_rf %>%
+  head(7)
+plot(bd_rf_top)
+```
+### Local explanation – Naive Bayes
+
+```{r, fig.width=4, fig.height=3, echo=FALSE}
+bd_nb <- predict_parts(
+  exp_nb,
+  new_observation = obs,
+  type = "break_down"
+)
+
+# Keeping only top 7 contributions
+bd_nb_top <- bd_nb %>%
+  head(7)
+
+plot(bd_nb_top)
+```
+Local break-down plots show that Random Forest combines many feature contributions to form individual prediction, whereas Naive Bayes relies on fewer dominant predictors. Break-down plots were used instead of SHAP due to computational efficiency.
+
+
+
+# Declaration of AI Assistance
+AI-based tools were used as support for language refinement and conceptual clarification.
+
+# References
+
+# References
+<div id="refs"></div>
+
+
+
+
+
+
+
